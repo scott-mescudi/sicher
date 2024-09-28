@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-
 	"os"
-	"path/filepath"
 	"runtime"
 
 	"gobackup/src"
@@ -14,15 +12,24 @@ func main() {
 	srcfile := "srcf/diamond.exe"
 	dstdir := "dstf"
 
-	if fn, err := FileCheck(srcfile, dstdir); err != nil{
-		src.CopyFile(srcfile, fn,  104_857_600)
+	fn, err := src.FileCheck(srcfile, dstdir) 
+	if err != nil{
+		fmt.Println(err, "1")
+	}
+
+	err = src.CheckFileSize(srcfile, fn)
+	if err != nil{
+		fmt.Println(err, "2")
 		return
 	}
+	
+	fmt.Println("files are ot same size copying...")
+	src.CopyFile(srcfile, fn,  104_857_600)
 
 	fmt.Println("file in dst dir")
 	printMemUsage()
-
 }
+
 
 
 

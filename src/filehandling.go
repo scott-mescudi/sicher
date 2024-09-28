@@ -4,7 +4,26 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"fmt"
 )
+
+func CheckFileSize(srcFile, dstFile string) error{
+	f1, err := os.Stat(srcFile)
+	if err != nil{
+		return err
+	}
+
+	f2, err := os.Stat(dstFile)
+		if err != nil{
+		return err
+	}
+
+	if f1.Size() == f2.Size(){
+		return fmt.Errorf("srcFile and dstFile are the same size")
+	}
+
+	return nil
+}
 
 func FileCheck(srcFile, dstDIR string) (string, error){
 	f := filepath.Base(srcFile)
@@ -13,7 +32,7 @@ func FileCheck(srcFile, dstDIR string) (string, error){
 		return fn, err
 	}
 
-	return "", nil
+	return fn, nil
 }
 
 
