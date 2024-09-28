@@ -3,8 +3,18 @@ package src
 import (
 	"io"
 	"os"
+	"path/filepath"
 )
 
+func FileCheck(srcFile, dstDIR string) (string, error){
+	f := filepath.Base(srcFile)
+	fn := filepath.Join(dstDIR, f)
+	if _, err := os.Stat(fn); err != nil{
+		return fn, err
+	}
+
+	return "", nil
+}
 
 
 func CopyFile(srcFilePath, dstFilePath string, chunkSize int) (error){
