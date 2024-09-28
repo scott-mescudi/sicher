@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
-
+	"crypto/sha256"
+	"io"
 	"gobackup/src"
+	"os"
 )
 
 func main() {
-	srcfile := "srcf/diamond.exe"
+	srcfile := "srcf/test.txt"
 	dstdir := "dstf"
 	fd := filepath.Join(dstdir, filepath.Base(srcfile))
 
-
-	ok, err := src.FileCheck(srcfile, fd)
+	ok, err := FileCheck(srcfile, fd)
 	if err != nil || !ok{
 		fmt.Println(err)
 		return
@@ -22,13 +23,46 @@ func main() {
 	fmt.Println("copying....")
 	src.CopyFile(srcfile, fd, 1000)
 
-	printMemUsage()
+	
 }
 
 
+func checksum(filepath string) (string, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
 
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil { 
+		return "", err
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
 
+func FileCheck(srcFile, dstfile string) (bool, error){
+	_, err := os.Stat(srcFile)
+	if err != nil{
+		return false, fmt.Errorf("error accessing %v: %v", srcFile, err)
+	}
 
+	_, err = os.Stat(dstfile)
+	if err != nil{
+		return true, nil
+	}
+
+	f1, _ := checksum(srcFile)
+	f2, _ := checksum(dstfile)
+
+	if f1 != f2{
+		return true, nil
+	}
+	
+
+	return false, fmt.Errorf("%v and %v are the same size", srcFile, dstfile)
+	
+}
 
 func printMemUsage() {
 	var m runtime.MemStats
