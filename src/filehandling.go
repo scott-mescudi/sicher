@@ -15,7 +15,7 @@ func FileCheck(srcFile, dstfile string) (bool, error){
 
 	f2, err := os.Stat(dstfile)
 	if err != nil{
-		return false, fmt.Errorf("error accessing %v: %v", dstfile, err)
+		return true, nil
 	}
 
 	if f1.Size() != f2.Size(){

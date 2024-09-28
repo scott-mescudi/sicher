@@ -19,8 +19,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-
-	fmt.Println(ok)
+	fmt.Println("copying....")
+	src.CopyFile(srcfile, fd, 1000)
 
 	printMemUsage()
 }
