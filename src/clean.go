@@ -9,6 +9,7 @@ import (
 func Clean(srcDir, dstDir string){
 	var dstFiles []string
 	var srcFiles = make(map[string]bool)
+	
 	filepath.WalkDir(dstDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err

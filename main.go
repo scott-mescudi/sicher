@@ -8,6 +8,19 @@ import (
 
 	"os"
 )
+//TODO 1: add concurrency to clean func
+//TODO 2: make each file a go routine with limit of 10 and 100mb per file
+//TODO 3: implement worker pool for TODO 2
+
+func main() {
+	s := backup{
+		"Srcf",
+		"dstf",
+	}
+
+	s.StartBackup()
+}
+
 
 func(s backup) StartBackup(){
 	var srcfiles = make(map[string]bool)
@@ -49,14 +62,6 @@ type backup struct{
 	dstDir string
 }
 
-func main() {
-	s := backup{
-		"Srcf",
-		"dstf",
-	}
-
-	s.StartBackup()
-}
 
 
 
