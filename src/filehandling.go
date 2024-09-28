@@ -4,25 +4,44 @@ import (
 	"io"
 	"os"
 	"fmt"
+	"crypto/sha256"
 )
 
 
+func checksum(filepath string) (string, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil { 
+		return "", err
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
 func FileCheck(srcFile, dstfile string) (bool, error){
-	f1, err := os.Stat(srcFile)
+	_, err := os.Stat(srcFile)
 	if err != nil{
 		return false, fmt.Errorf("error accessing %v: %v", srcFile, err)
 	}
 
-	f2, err := os.Stat(dstfile)
+	_, err = os.Stat(dstfile)
 	if err != nil{
 		return true, nil
 	}
 
-	if f1.Size() != f2.Size(){
+	f1, _ := checksum(srcFile)
+	f2, _ := checksum(dstfile)
+
+	if f1 != f2{
 		return true, nil
 	}
+	
 
-	return false,  fmt.Errorf("%v and %v are the same size", srcFile, dstfile)
+	return false, fmt.Errorf("%v and %v are the same size", srcFile, dstfile)
 	
 }
 
