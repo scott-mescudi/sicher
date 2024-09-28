@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 	"runtime"
+
+	"gobackup/src"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func main() {
 
 		go func(i,fp string) {
 			defer wg.Done()
-			if err := copyFile(i, fp, 104_857_600); err != nil{
+			if err := src.CopyFile(i, fp, 104_857_600); err != nil{
 				errCh <-  fmt.Errorf("failed to copy %s: %v", i, err)
 			}
 		}(i,fp)
@@ -54,45 +55,6 @@ func main() {
 	printMemUsage()
 	fmt.Printf("Time for test1: %v\n",elapsed)
 	
-}
-
-func copyFile(srcFilePath, dstFilePath string, chunkSize int) (error){
-	file, err := os.Open(srcFilePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	
-	f, err := os.Create(dstFilePath)
-	if err != nil{
-		return err
-	}
-	defer f.Close()
-
-	buf := make([]byte, chunkSize)
-
-
-	for {
-		bytesRead, err  := file.Read(buf)
-		if err != nil{
-			if err != io.EOF{
-				return err
-			}
-			break
-		}
-
-		_, err =  f.Write(buf[:bytesRead])
-		if err != nil{
-			return err
-		}
-
-		if bytesRead < chunkSize {
-			break
-		}
-	}
-
-	return nil
 }
 
 
