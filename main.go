@@ -9,18 +9,15 @@ import (
 	"os"
 )
 
-func main() {
-	srcDir := "srcf"
-	dstdir := "dstf"
-	
+func(s backup) StartBackup(){
 	var srcfiles = make(map[string]bool)
-	defer src.Clean(srcDir, dstdir)
+	defer src.Clean(s.srcDir, s.dstDir)
 
-	filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+	filepath.WalkDir(s.srcDir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if path != srcDir{
+			if path != s.srcDir{
 				srcfiles[path] = true
 			}
 			
@@ -28,9 +25,9 @@ func main() {
 	})
 
 	for i := range srcfiles {
-		x := strings.TrimPrefix(i, srcDir)
+		x := strings.TrimPrefix(i, s.srcDir)
 		
-		dstfile := filepath.Join(dstdir, x)
+		dstfile := filepath.Join(s.dstDir, x)
 		srcfile := filepath.Join(i)
 
 		ok, err := src.FileCheck(srcfile, dstfile)
@@ -45,6 +42,20 @@ func main() {
 	}
 
 
+}
+
+type backup struct{
+	srcDir string
+	dstDir string
+}
+
+func main() {
+	s := backup{
+		"Srcf",
+		"dstf",
+	}
+
+	s.StartBackup()
 }
 
 
