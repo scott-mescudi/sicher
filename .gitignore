@@ -1,3 +1,6 @@
 *.exe
 folder/
 backup131233/
+srcf/
+dstf/
+test/
