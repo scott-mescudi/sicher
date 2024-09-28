@@ -52,15 +52,6 @@ func CopyFile(srcFilePath, dstFilePath string, chunkSize int) (error){
 	}
 	defer file.Close()
 
-	fs, err  := os.Stat(srcFilePath)
-	if err != nil{
-		return err
-	}
-
-	if fs.IsDir(){
-		os.Mkdir(dstFilePath, 0700)
-		return nil
-	}
 	
 	f, err := os.Create(dstFilePath)
 	if err != nil{

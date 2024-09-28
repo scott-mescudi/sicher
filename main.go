@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"gobackup/src"
 	"path/filepath"
+	"strings"
 
-	"runtime"
 	"os"
 )
 
@@ -14,7 +14,7 @@ func main() {
 	dstdir := "dstf"
 	
 	var srcfiles = make(map[string]bool)
-	defer src.Clean(srcfiles, dstdir)
+	// defer src.Clean(srcfiles, dstdir)
 
 	filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
@@ -27,35 +27,27 @@ func main() {
 			return nil
 	})
 
-	for i := range srcfiles{
-		dstfile := filepath.Join(dstdir, i)
-		srcfile := filepath.Join(srcDir, i)
+	for i := range srcfiles {
+		x := strings.TrimPrefix(i, srcDir)
+		
+		dstfile := filepath.Join(dstdir, x)
+		srcfile := filepath.Join(i)
 
 		ok, err := src.FileCheck(srcfile, dstfile)
-		if err != nil || !ok{
+		if err != nil || !ok {
 			continue
 		}
 
-		src.CopyFile(srcfile, dstfile, 1024)
+		err = src.CopyFile(srcfile, dstfile, 1024)
+		if err != nil{
+			fmt.Println(err)
+		}
 	}
 
+
 }
 
 
 
 
-
-
-func printMemUsage() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
-	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
-	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
-	fmt.Printf("\tNumGC = %v\n", m.NumGC)
-}
-
-func bToMb(b uint64) float64 {
-	return float64(b) / 1024 / 1024
-}
 
