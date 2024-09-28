@@ -14,7 +14,7 @@ func main() {
 	dstdir := "dstf"
 	
 	var srcfiles = make(map[string]bool)
-	// defer src.Clean(srcfiles, dstdir)
+	defer src.Clean(srcDir, dstdir)
 
 	filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
