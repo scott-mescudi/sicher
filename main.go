@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
+
+	"gobackup/src"
 )
 
 func main() {
@@ -13,9 +14,9 @@ func main() {
 	fd := filepath.Join(dstdir, filepath.Base(srcfile))
 
 
-	ok, err := FileCheck(srcfile, fd)
-	if err != nil{
-		fmt.Println(err, ok)
+	ok, err := src.FileCheck(srcfile, fd)
+	if err != nil || !ok{
+		fmt.Println(err)
 		return
 	}
 
@@ -24,24 +25,7 @@ func main() {
 	printMemUsage()
 }
 
-func FileCheck(srcFile, dstfile string) (bool, error){
-	f1, err := os.Stat(srcFile)
-	if err != nil{
-		return false, fmt.Errorf("error accessing %v: %v", srcFile, err)
-	}
 
-	f2, err := os.Stat(dstfile)
-	if err != nil{
-		return false, fmt.Errorf("error accessing %v: %v", dstfile, err)
-	}
-
-	if f1.Size() != f2.Size(){
-		return true, nil
-	}
-
-	return false,  fmt.Errorf("%v and %v are the same size", srcFile, dstfile)
-	
-}
 
 
 
