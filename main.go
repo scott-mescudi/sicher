@@ -19,7 +19,6 @@ func main() {
 		"Srcf",
 		"dstf",
 	}
-
 	start := time.Now()
 	s.StartBackup()
 	fmt.Printf("Elapsed: %v\n", time.Since(start))
@@ -58,25 +57,26 @@ func (s backup) StartBackup() {
 		return nil
 	})
 
-	work(srcfiles, s)
-
-}
-
-func work(srcfiles map[string]bool, s backup){
 	for i := range srcfiles {
+
 		x := strings.TrimPrefix(i, s.srcDir)
 		dstfile := filepath.Join(s.dstDir, x)
 		srcfile := filepath.Join(i)
+		work(srcfile, dstfile, 1024)
 
-		ok, err := src.FileCheck(srcfile, dstfile)
-		if err != nil || !ok {
-			continue
-		}
+	}
 
-		err = src.CopyFile(srcfile, dstfile, 1024)
-		if err != nil {
-			fmt.Println(err)
-		}
+}
+
+func work(srcfile, dstfile string, buf int) {
+	ok, err := src.FileCheck(srcfile, dstfile)
+	if err != nil || !ok {
+		return
+	}
+
+	err = src.CopyFile(srcfile, dstfile, buf)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 
