@@ -30,6 +30,11 @@ type Config struct {
 	RestrictedExtensions map[string]bool `toml:"restrictedExtensions"`
 }
 
+type Worker struct{
+	Srcfile, Dstfile string
+	Buf int
+}
+
 
 func main() {
 	config, err := LoadConfig("config.toml")
@@ -90,30 +95,32 @@ func (cf *Config) StartBackup() {
 	})
 
 
-	var wg sync.WaitGroup
+	var dirWg sync.WaitGroup
 	for _, dir := range dirsToCreate{
-		wg.Add(1)
+		dirWg.Add(1)
 		go func(dir string){
-            defer wg.Done()
+            defer dirWg.Done()
             fs := filepath.Join(cf.DstDir, dir)
             os.Mkdir(fs, 0666)
         }(dir)
 	}
-	wg.Wait()
+	dirWg.Wait()
 
 
 
 	for i := range srcfiles {
-		wg.Add(1)
+		dirWg.Add(1)
 		go func(i string){
-			defer wg.Done()
+			defer dirWg.Done()
 			x := strings.TrimPrefix(i, cf.SrcDir)
 			dstfile := filepath.Join(cf.DstDir, x)
 			srcfile := filepath.Join(i)
 			work(srcfile, dstfile, cf.MemUsage, cf.MaxFileSize)
 		}(i)
 	}
-	wg.Wait()
+
+
+	dirWg.Wait()
 
 }
 
