@@ -13,7 +13,7 @@ import (
 	"gobackup/pkg"
 )
 
-//TODO 1: add concurrency to clean func
+
 //TODO 2: make each file a go routine with limit of 10 and 100mb per file
 //TODO 3: implement worker pool for TODO 2
 
@@ -31,8 +31,9 @@ type Config struct {
 }
 
 
-func main() {
 
+
+func main() {
 	config, err := LoadConfig("config.toml")
 	if err != nil {
 		fmt.Printf("Error loading config: %v\n", err)
