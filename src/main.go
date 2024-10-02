@@ -31,8 +31,6 @@ type Config struct {
 }
 
 
-
-
 func main() {
 	config, err := LoadConfig("config.toml")
 	if err != nil {
@@ -102,14 +100,14 @@ func (cf *Config) StartBackup() {
 		x := strings.TrimPrefix(i, cf.SrcDir)
 		dstfile := filepath.Join(cf.DstDir, x)
 		srcfile := filepath.Join(i)
-		work(srcfile, dstfile, 1024)
+		work(srcfile, dstfile, cf.MemUsage, cf.MaxFileSize)
 
 	}
 
 }
 
-func work(srcfile, dstfile string, buf int) {
-	ok, err := pkg.FileCheck(srcfile, dstfile)
+func work(srcfile, dstfile string, buf, maxFileSize int) {
+	ok, err := pkg.FileCheck(srcfile, dstfile, maxFileSize)
 	if err != nil || !ok {
 		return
 	}

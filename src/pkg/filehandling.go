@@ -21,10 +21,14 @@ func checksum(filepath string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-func FileCheck(srcFile, dstfile string) (bool, error) {
-	_, err := os.Stat(srcFile)
+func FileCheck(srcFile, dstfile string, sizeLimit int) (bool, error) {
+	f , err := os.Stat(srcFile)
 	if err != nil {
 		return false, fmt.Errorf("error accessing %v: %v", srcFile, err)
+	}
+
+	if f.Size() > int64(sizeLimit){
+		return false, fmt.Errorf("%v is larger than the specified size limit", srcFile)
 	}
 
 	_, err = os.Stat(dstfile)
