@@ -30,13 +30,6 @@ type Config struct {
 	RestrictedExtensions map[string]bool `toml:"restrictedExtensions"`
 }
 
-func LoadConfig(filePath string) (*Config, error) {
-	var config Config
-	if _, err := toml.DecodeFile(filePath, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
-}
 
 func main() {
 
@@ -49,6 +42,14 @@ func main() {
 	start := time.Now()
 	config.StartBackup()
 	fmt.Printf("Elapsed: %v\n", time.Since(start))
+}
+
+func LoadConfig(filePath string) (*Config, error) {
+	var config Config
+	if _, err := toml.DecodeFile(filePath, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
 }
 
 func (cf *Config) StartBackup() {
