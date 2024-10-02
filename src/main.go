@@ -32,7 +32,7 @@ type Config struct {
 
 type Worker struct{
 	Srcfile, Dstfile string
-	Buf int
+	Buf, MaxFileSize int
 }
 
 
@@ -106,22 +106,30 @@ func (cf *Config) StartBackup() {
 	}
 	dirWg.Wait()
 
-
-
-	for i := range srcfiles {
-		dirWg.Add(1)
-		go func(i string){
-			defer dirWg.Done()
-			x := strings.TrimPrefix(i, cf.SrcDir)
-			dstfile := filepath.Join(cf.DstDir, x)
-			srcfile := filepath.Join(i)
-			work(srcfile, dstfile, cf.MemUsage, cf.MaxFileSize)
-		}(i)
+	tasks := make(chan Worker, len(srcfiles))
+	var wg sync.WaitGroup
+	for i := 0; i < cf.MaxWorkers; i++ {
+		wg.Add(1)
+		go worker(tasks, &wg)
 	}
 
+	for i := range srcfiles {
+		x := strings.TrimPrefix(i, cf.SrcDir)
+		dstfile := filepath.Join(cf.DstDir, x)
+		srcfile := filepath.Join(i)
+		tasks <- Worker{srcfile, dstfile, cf.MemUsage, cf.MaxFileSize}
 
-	dirWg.Wait()
+	}
 
+	close(tasks)
+	wg.Wait()
+}
+
+func worker(tasks chan Worker, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for task := range tasks {
+		work(task.Srcfile, task.Dstfile, task.Buf, task.MaxFileSize) 
+	}
 }
 
 func work(srcfile, dstfile string, buf, maxFileSize int) {
@@ -134,6 +142,5 @@ func work(srcfile, dstfile string, buf, maxFileSize int) {
 	if err!= nil {
         fmt.Println(err)
     }
-
 }
 

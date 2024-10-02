@@ -1,7 +1,7 @@
 srcDir = "D:\\GObackup\\hello\\srcf"
 dstDir = "D:\\GObackup\\hello\\dstf"
 
-maxWorkers = 10 #max files to process concurrently
+maxWorkers = 1 #max files to process concurrently
 
 memUsage = 102400 # in bytes
 maxFileSize = 1048576  # in bytes
