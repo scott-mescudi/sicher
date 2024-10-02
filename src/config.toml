@@ -1,11 +1,12 @@
 srcDir = "D:\\GObackup\\hello\\srcf"
 dstDir = "D:\\GObackup\\hello\\dstf"
 
-maxWorkers = 10 
-memUsage = 102400
-maxFileSize = 1048576  # 1 MB
+maxWorkers = 10 #max files to process concurrently
 
-backupFreq = 1 # minutes
+memUsage = 102400 # in bytes
+maxFileSize = 1048576  # in bytes
+
+backupFreq = 1 # in minutes
 
 
 [restrictedDirs]
