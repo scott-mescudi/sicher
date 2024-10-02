@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 
 	"gobackup/pkg"
 )
-
 
 //TODO 2: make each file a go routine with limit of 10 and 100mb per file
 //TODO 3: implement worker pool for TODO 2
@@ -90,19 +90,30 @@ func (cf *Config) StartBackup() {
 	})
 
 
-
+	var wg sync.WaitGroup
 	for _, dir := range dirsToCreate{
-		fs := filepath.Join(cf.DstDir, dir)
-		os.Mkdir(fs, 0700)
+		wg.Add(1)
+		go func(dir string){
+            defer wg.Done()
+            fs := filepath.Join(cf.DstDir, dir)
+            os.Mkdir(fs, 0666)
+        }(dir)
 	}
+	wg.Wait()
+
+
 
 	for i := range srcfiles {
-		x := strings.TrimPrefix(i, cf.SrcDir)
-		dstfile := filepath.Join(cf.DstDir, x)
-		srcfile := filepath.Join(i)
-		work(srcfile, dstfile, cf.MemUsage, cf.MaxFileSize)
-
+		wg.Add(1)
+		go func(i string){
+			defer wg.Done()
+			x := strings.TrimPrefix(i, cf.SrcDir)
+			dstfile := filepath.Join(cf.DstDir, x)
+			srcfile := filepath.Join(i)
+			work(srcfile, dstfile, cf.MemUsage, cf.MaxFileSize)
+		}(i)
 	}
+	wg.Wait()
 
 }
 
