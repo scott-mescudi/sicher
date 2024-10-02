@@ -1,0 +1,19 @@
+srcDir = "D:\\GObackup\\test\\srcf"
+dstDir = "D:\\GObackup\\test\\dstf"
+
+maxWorkers = 10 # max amount of files to process concurrently
+memUsage = 100 # per worker in bytes
+maxFileSize = 1048576  # 1 MB
+
+backupFreq = 1 # minutes
+
+
+[restrictedDirs]
+"test" = true
+
+[restrictedFiles]
+"test.exe" = true
+
+[restrictedExtensions]
+".sigma" = true
+
