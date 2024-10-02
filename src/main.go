@@ -6,15 +6,16 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"gobackup/pkg"
-)
 
+	"github.com/BurntSushi/toml"
+)
 
 type Config struct {
 	SrcDir      string `toml:"srcDir"`
@@ -29,34 +30,42 @@ type Config struct {
 	RestrictedExtensions map[string]bool `toml:"restrictedExtensions"`
 }
 
-type Worker struct{
+type Worker struct {
 	Srcfile, Dstfile string
 	Buf, MaxFileSize int
 }
 
-
 func main() {
-    config, err := LoadConfig("config.toml")
-    if err != nil {
-        fmt.Printf("Error loading config: %v\n", err)
-        return
-    }
+	config, err := LoadConfig("config.toml")
+	if err != nil {
+		fmt.Printf("Error loading config: %v\n", err)
+		return
+	}
 
-    ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
-    sigs := make(chan os.Signal, 1)
-    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
+	go func() {
+		<-sigs
+		cancel()
+	}()
 
-    go func() {
-        <-sigs 
-        cancel() 
-    }()
+	backupInterval := time.Duration(config.BackupFreq) * time.Minute
 
-    
-    config.StartBackup(ctx)
+	ticker := time.NewTicker(backupInterval)
+	defer ticker.Stop()
+
+	config.StartBackup(ctx)
+
+	for {
+		select {
+		case <-ticker.C:
+			config.StartBackup(ctx)
+		}
+	}
 }
-
 
 func LoadConfig(filePath string) (*Config, error) {
 	var config Config
@@ -78,14 +87,14 @@ func (cf *Config) StartBackup(ctx context.Context) {
 
 		if d.IsDir() {
 			tpath := filepath.Base(path)
-            if _, ok := cf.RestrictedDirs[tpath]; ok {
+			if _, ok := cf.RestrictedDirs[tpath]; ok {
 				return filepath.SkipDir
-			}else{
-				if path != cf.SrcDir{
+			} else {
+				if path != cf.SrcDir {
 					dirsToCreate = append(dirsToCreate, tpath)
 				}
 			}
-        }else{
+		} else {
 			fpath := filepath.Base(path)
 			if _, ok := cf.RestrictedFiles[fpath]; ok {
 				return filepath.SkipDir
@@ -104,15 +113,14 @@ func (cf *Config) StartBackup(ctx context.Context) {
 		return nil
 	})
 
-
 	var dirWg sync.WaitGroup
-	for _, dir := range dirsToCreate{
+	for _, dir := range dirsToCreate {
 		dirWg.Add(1)
-		go func(dir string){
-            defer dirWg.Done()
-            fs := filepath.Join(cf.DstDir, dir)
-            os.Mkdir(fs, 0666)
-        }(dir)
+		go func(dir string) {
+			defer dirWg.Done()
+			fs := filepath.Join(cf.DstDir, dir)
+			os.Mkdir(fs, 0666)
+		}(dir)
 	}
 	dirWg.Wait()
 
@@ -136,18 +144,18 @@ func (cf *Config) StartBackup(ctx context.Context) {
 }
 
 func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
-    defer wg.Done()
-    for {
-        select {
-        case task, ok := <-tasks:
-            if !ok {
-                return 
-            }
-            work(task.Srcfile, task.Dstfile, task.Buf, task.MaxFileSize)
-        case <-ctx.Done(): 
-            return 
-        }
-    }
+	defer wg.Done()
+	for {
+		select {
+		case task, ok := <-tasks:
+			if !ok {
+				return
+			}
+			work(task.Srcfile, task.Dstfile, task.Buf, task.MaxFileSize)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func work(srcfile, dstfile string, buf, maxFileSize int) {
@@ -156,8 +164,7 @@ func work(srcfile, dstfile string, buf, maxFileSize int) {
 		return
 	}
 
-	err = pkg.CopyFile(srcfile, dstfile, buf)
-	if err!= nil {
-        fmt.Println(err)
-    }
+	pkg.CopyFile(srcfile, dstfile, buf)
 }
+
+//Huntin'Wabbitz - J. cole
