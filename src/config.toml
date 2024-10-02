@@ -1,8 +1,8 @@
-srcDir = "D:\\GObackup\\test\\srcf"
-dstDir = "D:\\GObackup\\test\\dstf"
+srcDir = "D:\\GObackup\\hello\\srcf"
+dstDir = "D:\\GObackup\\hello\\dstf"
 
-maxWorkers = 10 # max amount of files to process concurrently
-memUsage = 100 # per worker in bytes
+maxWorkers = 10 
+memUsage = 102400
 maxFileSize = 1048576  # 1 MB
 
 backupFreq = 1 # minutes
@@ -13,6 +13,7 @@ backupFreq = 1 # minutes
 
 [restrictedFiles]
 "test.exe" = true
+"test.ps1" = true
 
 [restrictedExtensions]
 ".sigma" = true

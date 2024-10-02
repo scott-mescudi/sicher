@@ -55,6 +55,7 @@ func LoadConfig(filePath string) (*Config, error) {
 
 func (cf *Config) StartBackup() {
 	var srcfiles = make(map[string]bool)
+	var ddddd = []string{}
 	defer pkg.Clean(cf.SrcDir, cf.DstDir)
 
 	filepath.WalkDir(cf.SrcDir, func(path string, d os.DirEntry, err error) error {
@@ -62,28 +63,45 @@ func (cf *Config) StartBackup() {
 			return err
 		}
 
-		if _, ok := cf.RestrictedDirs[path]; ok {
-			return filepath.SkipDir
+		if d.IsDir() {
+			tpath := filepath.Base(path)
+            if _, ok := cf.RestrictedDirs[tpath]; ok {
+				return filepath.SkipDir
+			}else{
+				if path != cf.SrcDir{
+					ddddd = append(ddddd, tpath)
+				}
+			}
+        }else{
+			fpath := filepath.Base(path)
+			if _, ok := cf.RestrictedFiles[fpath]; ok {
+				return filepath.SkipDir
+			}
+
+			ext := filepath.Ext(path)
+			if _, ok := cf.RestrictedExtensions[ext]; ok {
+				return filepath.SkipDir
+			}
+
+			if path != cf.SrcDir {
+				srcfiles[path] = true
+			}
 		}
 
-		if _, ok := cf.RestrictedFiles[path]; ok {
-			return filepath.SkipDir
-		}
 
-		ext := filepath.Ext(path)
-		if _, ok := cf.RestrictedExtensions[ext]; ok {
-			return filepath.SkipDir
-		}
 
-		if path != cf.SrcDir {
-			srcfiles[path] = true
-		}
 
 		return nil
 	})
 
-	for i := range srcfiles {
 
+
+	for _, dir := range ddddd{
+		fs := filepath.Join(cf.DstDir, dir)
+		os.Mkdir(fs, 0700)
+	}
+
+	for i := range srcfiles {
 		x := strings.TrimPrefix(i, cf.SrcDir)
 		dstfile := filepath.Join(cf.DstDir, x)
 		srcfile := filepath.Join(i)
@@ -100,7 +118,9 @@ func work(srcfile, dstfile string, buf int) {
 	}
 
 	err = pkg.CopyFile(srcfile, dstfile, buf)
-	if err != nil {
-		fmt.Println(err)
-	}
+	if err!= nil {
+        fmt.Println(err)
+    }
+
 }
+
