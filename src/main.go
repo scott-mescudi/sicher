@@ -55,7 +55,7 @@ func LoadConfig(filePath string) (*Config, error) {
 
 func (cf *Config) StartBackup() {
 	var srcfiles = make(map[string]bool)
-	var ddddd = []string{}
+	var dirsToCreate = []string{}
 	defer pkg.Clean(cf.SrcDir, cf.DstDir)
 
 	filepath.WalkDir(cf.SrcDir, func(path string, d os.DirEntry, err error) error {
@@ -69,7 +69,7 @@ func (cf *Config) StartBackup() {
 				return filepath.SkipDir
 			}else{
 				if path != cf.SrcDir{
-					ddddd = append(ddddd, tpath)
+					dirsToCreate = append(dirsToCreate, tpath)
 				}
 			}
         }else{
@@ -88,15 +88,12 @@ func (cf *Config) StartBackup() {
 			}
 		}
 
-
-
-
 		return nil
 	})
 
 
 
-	for _, dir := range ddddd{
+	for _, dir := range dirsToCreate{
 		fs := filepath.Join(cf.DstDir, dir)
 		os.Mkdir(fs, 0700)
 	}
