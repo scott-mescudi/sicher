@@ -1,21 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/BurntSushi/toml"
-
 	"gobackup/pkg"
 )
 
-//TODO 2: make each file a go routine with limit of 10 and 100mb per file
-//TODO 3: implement worker pool for TODO 2
 
 type Config struct {
 	SrcDir      string `toml:"srcDir"`
@@ -37,16 +36,27 @@ type Worker struct{
 
 
 func main() {
-	config, err := LoadConfig("config.toml")
-	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		return
-	}
+    config, err := LoadConfig("config.toml")
+    if err != nil {
+        fmt.Printf("Error loading config: %v\n", err)
+        return
+    }
 
-	start := time.Now()
-	config.StartBackup()
-	fmt.Printf("Elapsed: %v\n", time.Since(start))
+    ctx, cancel := context.WithCancel(context.Background())
+
+    sigs := make(chan os.Signal, 1)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+
+    go func() {
+        <-sigs 
+        cancel() 
+    }()
+
+    
+    config.StartBackup(ctx)
 }
+
 
 func LoadConfig(filePath string) (*Config, error) {
 	var config Config
@@ -56,7 +66,7 @@ func LoadConfig(filePath string) (*Config, error) {
 	return &config, nil
 }
 
-func (cf *Config) StartBackup() {
+func (cf *Config) StartBackup(ctx context.Context) {
 	var srcfiles = make(map[string]bool)
 	var dirsToCreate = []string{}
 	defer pkg.Clean(cf.SrcDir, cf.DstDir)
@@ -110,7 +120,7 @@ func (cf *Config) StartBackup() {
 	var wg sync.WaitGroup
 	for i := 0; i < cf.MaxWorkers; i++ {
 		wg.Add(1)
-		go worker(tasks, &wg)
+		go worker(ctx, tasks, &wg)
 	}
 
 	for i := range srcfiles {
@@ -125,11 +135,19 @@ func (cf *Config) StartBackup() {
 	wg.Wait()
 }
 
-func worker(tasks chan Worker, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for task := range tasks {
-		work(task.Srcfile, task.Dstfile, task.Buf, task.MaxFileSize) 
-	}
+func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
+    defer wg.Done()
+    for {
+        select {
+        case task, ok := <-tasks:
+            if !ok {
+                return 
+            }
+            work(task.Srcfile, task.Dstfile, task.Buf, task.MaxFileSize)
+        case <-ctx.Done(): 
+            return 
+        }
+    }
 }
 
 func work(srcfile, dstfile string, buf, maxFileSize int) {
@@ -143,4 +161,3 @@ func work(srcfile, dstfile string, buf, maxFileSize int) {
         fmt.Println(err)
     }
 }
-
