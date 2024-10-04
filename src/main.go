@@ -2,19 +2,17 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
-
 	"os"
 	"path/filepath"
 	"strings"
-
 	"gobackup/pkg"
-
 	"github.com/BurntSushi/toml"
+	"github.com/natefinch/lumberjack"
 )
 
 type Config struct {
@@ -36,22 +34,33 @@ type Worker struct {
 }
 
 func main() {
+		logfile := &lumberjack.Logger{
+		Filename:   "backup_daemon.log", 
+		MaxSize:    10,                 
+		MaxBackups: 3,                  
+		MaxAge:     28,                  
+		Compress:   true,                
+	}
+
+	// Set log output to logfile managed by lumberjack
+	log.SetOutput(logfile)
+
 	config, err := LoadConfig("config.toml")
 	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
+		log.Printf("Error loading config: %v\n", err)
 		return
 	}
 
 	_, err = os.Stat(config.SrcDir)
 	if os.IsNotExist(err) {
-        fmt.Printf("Cannot find source directory %v\n", config.SrcDir)
-        return
-    }
+		log.Printf("Cannot find source directory %v\n", config.SrcDir)
+		return
+	}
 
 	_, err = os.Stat(config.DstDir)
 	if os.IsNotExist(err) {
-		fmt.Printf("Cannot find destination directory %v\n", config.DstDir)
-        return
+		log.Printf("Cannot find destination directory %v\n", config.DstDir)
+		return
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -69,7 +78,7 @@ func main() {
 	ticker := time.NewTicker(backupInterval)
 	defer ticker.Stop()
 
-	config.StartBackup(ctx)
+	config.StartBackup(ctx) // First backup run
 
 	for {
 		select {
@@ -84,6 +93,7 @@ func LoadConfig(filePath string) (*Config, error) {
 	if _, err := toml.DecodeFile(filePath, &config); err != nil {
 		return nil, err
 	}
+	log.Printf("Configuration loaded from %v", filePath)
 	return &config, nil
 }
 
@@ -92,14 +102,18 @@ func (cf *Config) StartBackup(ctx context.Context) {
 	var dirsToCreate = []string{}
 	defer pkg.Clean(cf.SrcDir, cf.DstDir)
 
+	log.Printf("Starting backup process from %v to %v", cf.SrcDir, cf.DstDir)
+
 	filepath.WalkDir(cf.SrcDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+			log.Printf("Error walking through directory: %v", err)
 			return err
 		}
 
 		if d.IsDir() {
 			tpath := filepath.Base(path)
 			if _, ok := cf.RestrictedDirs[tpath]; ok {
+				log.Printf("Skipping restricted directory: %v", tpath)
 				return filepath.SkipDir
 			} else {
 				if path != cf.SrcDir {
@@ -109,11 +123,13 @@ func (cf *Config) StartBackup(ctx context.Context) {
 		} else {
 			fpath := filepath.Base(path)
 			if _, ok := cf.RestrictedFiles[fpath]; ok {
+				log.Printf("Skipping restricted file: %v", fpath)
 				return filepath.SkipDir
 			}
 
 			ext := filepath.Ext(path)
 			if _, ok := cf.RestrictedExtensions[ext]; ok {
+				log.Printf("Skipping restricted file extension: %v", ext)
 				return filepath.SkipDir
 			}
 
@@ -131,7 +147,10 @@ func (cf *Config) StartBackup(ctx context.Context) {
 		go func(dir string) {
 			defer dirWg.Done()
 			fs := filepath.Join(cf.DstDir, dir)
-			os.Mkdir(fs, 0666)
+			err := os.Mkdir(fs, 0666)
+			if err != nil {
+				log.Printf("Error creating directory: %v", err)
+			}
 		}(dir)
 	}
 	dirWg.Wait()
@@ -148,11 +167,12 @@ func (cf *Config) StartBackup(ctx context.Context) {
 		dstfile := filepath.Join(cf.DstDir, x)
 		srcfile := filepath.Join(i)
 		tasks <- Worker{srcfile, dstfile, cf.MemUsage, cf.MaxFileSize}
-
+		log.Printf("Scheduled task for copying %v to %v", srcfile, dstfile)
 	}
 
 	close(tasks)
 	wg.Wait()
+	log.Printf("Backup completed.")
 }
 
 func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
@@ -163,8 +183,10 @@ func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
 			if !ok {
 				return
 			}
+			log.Printf("Worker handling task: copying %v to %v", task.Srcfile, task.Dstfile)
 			work(task.Srcfile, task.Dstfile, task.Buf, task.MaxFileSize)
 		case <-ctx.Done():
+			log.Println("Worker received cancel signal")
 			return
 		}
 	}
@@ -172,11 +194,19 @@ func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
 
 func work(srcfile, dstfile string, buf, maxFileSize int) {
 	ok, err := pkg.FileCheck(srcfile, dstfile, maxFileSize)
-	if err != nil || !ok {
+	if err != nil {
+		log.Printf("Error checking file %v: %v", srcfile, err)
 		return
 	}
 
-	pkg.CopyFile(srcfile, dstfile, buf)
-}
+	if !ok {
+		log.Printf("File %v is either too large or already exists in the destination.", srcfile)
+		return
+	}
 
-//Huntin'Wabbitz - J. cole
+	err = pkg.CopyFile(srcfile, dstfile, buf)
+	if err != nil {
+		log.Printf("Error copying file %v to %v: %v", srcfile, dstfile, err)
+	}
+	log.Printf("Successfully copied %v to %v", srcfile, dstfile)
+}

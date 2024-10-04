@@ -1,5 +1,5 @@
-srcDir = "srcf"
-dstDir = "dstf"
+srcDir = "D:\\GObackup\\hello\\srcf"
+dstDir = "D:\\GObackup\\hello\\dstf"
 
 maxWorkers = 10 #max files to process concurrently
 
