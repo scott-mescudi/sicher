@@ -42,6 +42,18 @@ func main() {
 		return
 	}
 
+	_, err = os.Stat(config.SrcDir)
+	if os.IsNotExist(err) {
+        fmt.Printf("Cannot find source directory %v\n", config.SrcDir)
+        return
+    }
+
+	_, err = os.Stat(config.DstDir)
+	if os.IsNotExist(err) {
+		fmt.Printf("Cannot find destination directory %v\n", config.DstDir)
+        return
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	sigs := make(chan os.Signal, 1)
