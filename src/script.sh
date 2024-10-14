@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Variables (edit these as needed)
-SERVICE_NAME="your-daemon"
-GO_EXECUTABLE="your-daemon"
-GO_SOURCE_FILE="your-daemon.go"
+SERVICE_NAME="baky"
+GO_EXECUTABLE="baky"
+GO_SOURCE_FILE="main.go"
 INSTALL_DIR="/usr/local/bin"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 USER=$(whoami)
