@@ -1,22 +1,31 @@
-srcDir = "D:\\GObackup\\hello\\srcf"
-dstDir = "D:\\GObackup\\hello\\dstf"
+# Source directory from which files will be backed up
+srcDir = "testsrc"
 
-maxWorkers = 10 #max files to process concurrently
+# Destination directory where files will be backed up to
+dstDir = "testdst"
 
-memUsage = 104857600 # in bytes
-maxFileSize = 2147483648  # in bytes
+# Maximum number of files that can be processed concurrently during the backup operation
+maxWorkers = 10  # max files to process concurrently
 
-backupFreq = 30 # in minutes
+# Maximum memory usage allowed for the backup process (in bytes)
+memUsage = 104857600  # 100 MB in bytes
 
+# Maximum file size allowed for the backup (files larger than this will be skipped)
+maxFileSize = 2147483648  # 2 GB in bytes
 
-[restrictedDirs]
-"test" = true
+# Frequency of backups in minutes (how often backups should run)
+backupFreq = 30  # in minutes
 
+# [restrictedDirs] section defines directories that should not be backed up
+[restrictedDirs]  # You can list directories you don't want to back up here
+"test" = true  # The "test" directory will not be backed up
+
+# [restrictedFiles] section defines specific files that should be excluded from the backup
 [restrictedFiles]
-"test.exe" = true
-"test.ps1" = true
+"test.exe" = true  # Exclude the "test.exe" file from the backup
+"test.ps1" = true  # Exclude the "test.ps1" PowerShell script from the backup
 
+# [restrictedExtensions] section defines file extensions that should be restricted from backup
 [restrictedExtensions]
-".sigma" = true
-".exe" = true
-
+".test" = true  # Files with the ".test" extension will be excluded from the backup
+".exe" = true  # Files with the ".exe" extension will be excluded from the backup

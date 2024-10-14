@@ -9,4 +9,5 @@ test.txt
 test.go
 main_concurrent.txt
 main_concurrent.go
+config.toml
 
