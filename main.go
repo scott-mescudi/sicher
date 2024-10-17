@@ -109,9 +109,10 @@ func LoadConfig(filePath string) (*Config, error) {
 		return nil, err
 	}
 	logWithColor(INFO, fmt.Sprintf("Configuration loaded from %v", filePath))
+	
 	if ok := verifyConfig(&config); !ok {
 		logWithColor(ERROR, "Invalid configuration detected. Exiting...")
-		os.Exit(1)
+		return nil, fmt.Errorf("invalid configuration detected")
 	}
 	return &config, nil
 }
