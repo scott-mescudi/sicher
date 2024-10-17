@@ -141,12 +141,26 @@ The number of workers (threads) that Sicher uses to copy files concurrently can 
 
 ## Logging
 
-Sicher generates logs to track the progress of the backup operations. The logs are stored in a file called `sicher.log` and are managed by [lumberjack](https://github.com/natefinch/lumberjack) for automatic rotation and compression.
+Sicher generates logs to track the progress of backup operations. The logs are managed by the [lumberjack](https://github.com/natefinch/lumberjack) package for automatic rotation and compression. 
 
-- **Log location**: The log file `sicher.log` is created in the same directory where Sicher is executed.
-- **Log rotation**: The log file rotates when it reaches 10 MB, keeping up to 3 backup logs compressed.
+- **Log Location**: By default, the log file `sicher.log` is created in the same directory where the `sicher` binary is executed. To ensure consistent log management, you may want to configure a dedicated log directory, such as `/var/log/sicher.log`.
+  
+- **Log Management**: The log file rotates when it reaches 10 MB, keeping up to 3 backup logs compressed. This helps manage disk space while retaining sufficient log history for review.
 
-If there are errors, such as failure to copy a file or a directory not found, the details are logged.
+- **Log Content**: The log records important events, including successful backups, errors encountered during the backup process, and any skipped files or directories due to restrictions.
+
+- **Example Log Output**:
+    ```
+    [2024-10-17 14:22:01] INFO: Backup started for /path/to/source
+    [2024-10-17 14:22:05] INFO: Backed up file: /path/to/source/example.txt
+    [2024-10-17 14:22:10] ERROR: Failed to copy file: /path/to/source/temp/example.tmp
+    ```
+
+- **Monitoring Logs**: Since we specified `SyslogIdentifier=sicher-backup`, Sicher’s output will also be available in the system logs. You can monitor the Sicher logs by using the `journalctl` command:
+    ```bash
+    sudo journalctl -u sicher.service -f
+    ```
+
 
 ## Stopping Sicher
 
@@ -243,29 +257,6 @@ Since we specified `SyslogIdentifier=sicher-backup`, Sicher’s output will be a
 ```bash
 sudo journalctl -u sicher.service -f
 ```
-
-## Note
-
-Sicher generates logs to track the progress of backup operations. The logs are managed by the [lumberjack](https://github.com/natefinch/lumberjack) package for automatic rotation and compression. 
-
-- **Log Location**: By default, the log file `sicher.log` is created in the same directory where the `sicher` binary is executed. To ensure consistent log management, you may want to configure a dedicated log directory, such as `/var/log/sicher.log`.
-  
-- **Log Management**: The log file rotates when it reaches 10 MB, keeping up to 3 backup logs compressed. This helps manage disk space while retaining sufficient log history for review.
-
-- **Log Content**: The log records important events, including successful backups, errors encountered during the backup process, and any skipped files or directories due to restrictions.
-
-- **Example Log Output**:
-    ```
-    [2024-10-17 14:22:01] INFO: Backup started for /path/to/source
-    [2024-10-17 14:22:05] INFO: Backed up file: /path/to/source/example.txt
-    [2024-10-17 14:22:10] ERROR: Failed to copy file: /path/to/source/temp/example.tmp
-    ```
-
-- **Monitoring Logs**: Since we specified `SyslogIdentifier=sicher-backup`, Sicher’s output will also be available in the system logs. You can monitor the Sicher logs by using the `journalctl` command:
-    ```bash
-    sudo journalctl -u sicher.service -f
-    ```
-
 
 
 ### 6. Stopping and Restarting the Service
