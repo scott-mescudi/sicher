@@ -5,7 +5,7 @@ srcDir = "path/to/source"   # Source directory from which files will be backed u
 dstDir = "path/to/destination" # Destination directory where files will be backed up to
 
 
-maxWorkers = -10 # Maximum number of files that can be processed concurrently during the backup operation
+maxWorkers = 10 # Maximum number of files that can be processed concurrently during the backup operation
 
 
 memUsage = 104857600 # Maximum memory usage allowed for the backup process (in bytes)
