@@ -1,31 +1,33 @@
-# Source directory from which files will be backed up
-srcDir = "path/to/source"
 
-# Destination directory where files will be backed up to
-dstDir = "path/to/destination"
+srcDir = "path/to/source"   # Source directory from which files will be backed up
 
-# Maximum number of files that can be processed concurrently during the backup operation
-maxWorkers = 10 
 
-# Maximum memory usage allowed for the backup process (in bytes)
-memUsage = 104857600 
+dstDir = "path/to/destination" # Destination directory where files will be backed up to
 
-# Maximum file size allowed for the backup (files larger than this will be skipped)
-maxFileSize = 2147483648 
 
-# Frequency of backups in minutes (how often backups should run)
-backupFreq = 30  
+maxWorkers = -10 # Maximum number of files that can be processed concurrently during the backup operation
 
-# [restrictedDirs] section defines directories that should not be backed up
-[restrictedDirs]
+
+memUsage = 104857600 # Maximum memory usage allowed for the backup process (in bytes)
+
+
+maxFileSize = 2147483648 # Maximum file size allowed for the backup (files larger than this will be skipped)
+
+
+backupFreq = 30  # Frequency of backups in minutes (how often backups should run)
+
+
+[restrictedDirs] # [restrictedDirs] section defines directories that should not be backed up
 "test" = true  
 
-# [restrictedFiles] section defines specific files that should be excluded from the backup
-[restrictedFiles]
+
+[restrictedFiles] # [restrictedFiles] section defines specific files that should be excluded from the backup
 "test.exe" = true  
 "test.ps1" = true  
 
-# [restrictedExtensions] section defines file extensions that should be restricted from backup
-[restrictedExtensions]
+
+[restrictedExtensions] # [restrictedExtensions] section defines file extensions that should be restricted from backup
 ".test" = true 
 ".exe" = true  
+
+

@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 	"os"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"github.com/scott-mescudi/sicher/internal"
@@ -33,13 +34,25 @@ type Worker struct {
 	Buf, MaxFileSize int
 }
 
+const (
+	INFO  = "[INFO]"
+	ERROR = "[ERROR]"
+	WARN  = "[WARN]"
+)
+
+func logWithColor(level, message string) {
+	log.Printf("%s %s\n", level, message)
+}
+
+// Struct and functions...
+
 func main() {
 	logfile := &lumberjack.Logger{
-		Filename:   "sicher.log", 
-		MaxSize:    10,                 
-		MaxBackups: 3,                  
-		MaxAge:     28,                  
-		Compress:   true,                
+		Filename:   "sicher.log",
+		MaxSize:    10,
+		MaxBackups: 3,
+		MaxAge:     28,
+		Compress:   true,
 	}
 
 	// Set log output to logfile managed by lumberjack
@@ -47,19 +60,19 @@ func main() {
 
 	config, err := LoadConfig("sicher.toml")
 	if err != nil {
-		log.Printf("Error loading config: %v\n", err)
+		logWithColor(ERROR, fmt.Sprintf("Error loading config: %v", err))
 		return
 	}
 
 	_, err = os.Stat(config.SrcDir)
 	if os.IsNotExist(err) {
-		log.Printf("Cannot find source directory %v\n", config.SrcDir)
+		logWithColor(ERROR, fmt.Sprintf("Cannot find source directory %v", config.SrcDir))
 		return
 	}
 
 	_, err = os.Stat(config.DstDir)
 	if os.IsNotExist(err) {
-		log.Printf("Cannot find destination directory %v\n", config.DstDir)
+		logWithColor(ERROR, fmt.Sprintf("Cannot find destination directory %v", config.DstDir))
 		return
 	}
 
@@ -95,8 +108,36 @@ func LoadConfig(filePath string) (*Config, error) {
 	if _, err := toml.DecodeFile(filePath, &config); err != nil {
 		return nil, err
 	}
-	log.Printf("Configuration loaded from %v", filePath)
+	logWithColor(INFO, fmt.Sprintf("Configuration loaded from %v", filePath))
+	if ok := verifyConfig(&config); !ok {
+		logWithColor(ERROR, "Invalid configuration detected. Exiting...")
+		os.Exit(1)
+	}
 	return &config, nil
+}
+
+func verifyConfig(config *Config) bool {
+	if config.MaxWorkers <= 0 {
+		logWithColor(ERROR, fmt.Sprintf("Invalid maxWorkers value. Expected a positive integer, got: %v", config.MaxWorkers))
+		return false
+	}
+
+	if config.MemUsage <= 0 {
+		logWithColor(ERROR, fmt.Sprintf("Invalid memUsage value. Expected a positive integer, got: %v", config.MemUsage))
+		return false
+	}
+
+	if config.BackupFreq <= 0 {
+		logWithColor(ERROR, fmt.Sprintf("Invalid backupFreq value. Expected a positive integer, got: %v", config.BackupFreq))
+		return false
+	}
+
+	if config.MaxFileSize <= 0 {
+		logWithColor(ERROR, fmt.Sprintf("Invalid maxFileSize value. Expected a positive integer, got: %v", config.MaxFileSize))
+		return false
+	}
+
+	return true
 }
 
 func (cf *Config) StartBackup(ctx context.Context) {
@@ -104,18 +145,18 @@ func (cf *Config) StartBackup(ctx context.Context) {
 	var dirsToCreate = []string{}
 	defer pkg.Clean(cf.SrcDir, cf.DstDir)
 
-	log.Printf("Starting backup process from %v to %v", cf.SrcDir, cf.DstDir)
+	logWithColor(INFO, fmt.Sprintf("Starting backup process from %v to %v", cf.SrcDir, cf.DstDir))
 
 	filepath.WalkDir(cf.SrcDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			log.Printf("Error walking through directory: %v", err)
+			logWithColor(ERROR, fmt.Sprintf("Error walking through directory: %v", err))
 			return err
 		}
 
 		if d.IsDir() {
 			tpath := filepath.Base(path)
 			if _, ok := cf.RestrictedDirs[tpath]; ok {
-				log.Printf("Skipping restricted directory: %v", tpath)
+				logWithColor(WARN, fmt.Sprintf("Skipping restricted directory: %v", tpath))
 				return filepath.SkipDir
 			} else {
 				if path != cf.SrcDir {
@@ -125,14 +166,14 @@ func (cf *Config) StartBackup(ctx context.Context) {
 		} else {
 			fpath := filepath.Base(path)
 			if _, ok := cf.RestrictedFiles[fpath]; ok {
-				log.Printf("Skipping restricted file: %v", fpath)
-				return filepath.SkipDir
+				logWithColor(WARN, fmt.Sprintf("Skipping restricted file: %v", fpath))
+				return nil
 			}
 
 			ext := filepath.Ext(path)
 			if _, ok := cf.RestrictedExtensions[ext]; ok {
-				log.Printf("Skipping restricted file extension: %v", ext)
-				return filepath.SkipDir
+				logWithColor(WARN, fmt.Sprintf("Skipping restricted file extension: %v", ext))
+				return nil
 			}
 
 			if path != cf.SrcDir {
@@ -151,7 +192,7 @@ func (cf *Config) StartBackup(ctx context.Context) {
 			fs := filepath.Join(cf.DstDir, dir)
 			err := os.Mkdir(fs, 0666)
 			if err != nil {
-				log.Printf("Error creating directory: %v", err)
+				logWithColor(ERROR, fmt.Sprintf("Error creating directory: %v", err))
 			}
 		}(dir)
 	}
@@ -169,12 +210,12 @@ func (cf *Config) StartBackup(ctx context.Context) {
 		dstfile := filepath.Join(cf.DstDir, x)
 		srcfile := filepath.Join(i)
 		tasks <- Worker{srcfile, dstfile, cf.MemUsage, cf.MaxFileSize}
-		log.Printf("Scheduled task for copying %v to %v", srcfile, dstfile)
+		logWithColor(INFO, fmt.Sprintf("Scheduled task for copying %v to %v", srcfile, dstfile))
 	}
 
 	close(tasks)
 	wg.Wait()
-	log.Printf("Backup completed.")
+	logWithColor(INFO, "Backup completed.")
 }
 
 func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
@@ -185,10 +226,10 @@ func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
 			if !ok {
 				return
 			}
-			log.Printf("Worker handling task: copying %v to %v", task.Srcfile, task.Dstfile)
+			logWithColor(INFO, fmt.Sprintf("Worker handling task: copying %v to %v", task.Srcfile, task.Dstfile))
 			work(task.Srcfile, task.Dstfile, task.Buf, task.MaxFileSize)
 		case <-ctx.Done():
-			log.Println("Worker received cancel signal")
+			logWithColor(WARN, "Worker received cancel signal")
 			return
 		}
 	}
@@ -197,18 +238,18 @@ func worker(ctx context.Context, tasks chan Worker, wg *sync.WaitGroup) {
 func work(srcfile, dstfile string, buf, maxFileSize int) {
 	ok, err := pkg.FileCheck(srcfile, dstfile, maxFileSize)
 	if err != nil {
-		log.Printf("Error checking file %v: %v", srcfile, err)
+		logWithColor(ERROR, fmt.Sprintf("Error checking file %v: %v", srcfile, err))
 		return
 	}
 
 	if !ok {
-		log.Printf("File %v is either too large or already exists in the destination.", srcfile)
+		logWithColor(WARN, fmt.Sprintf("File %v is either too large or already exists in the destination.", srcfile))
 		return
 	}
 
 	err = pkg.CopyFile(srcfile, dstfile, buf)
 	if err != nil {
-		log.Printf("Error copying file %v to %v: %v", srcfile, dstfile, err)
+		logWithColor(ERROR, fmt.Sprintf("Error copying file %v to %v: %v", srcfile, dstfile, err))
 	}
-	log.Printf("Successfully copied %v to %v", srcfile, dstfile)
+	logWithColor(INFO, fmt.Sprintf("Successfully copied %v to %v", srcfile, dstfile))
 }
