@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"gobackup/pkg"
+	"github.com/scott-mescudi/sicher/internal"
 	"github.com/BurntSushi/toml"
 	"github.com/natefinch/lumberjack"
 )
@@ -34,8 +34,8 @@ type Worker struct {
 }
 
 func main() {
-		logfile := &lumberjack.Logger{
-		Filename:   "backup_daemon.log", 
+	logfile := &lumberjack.Logger{
+		Filename:   "sicher.log", 
 		MaxSize:    10,                 
 		MaxBackups: 3,                  
 		MaxAge:     28,                  
@@ -45,7 +45,7 @@ func main() {
 	// Set log output to logfile managed by lumberjack
 	log.SetOutput(logfile)
 
-	config, err := LoadConfig("config.toml")
+	config, err := LoadConfig("sicher.toml")
 	if err != nil {
 		log.Printf("Error loading config: %v\n", err)
 		return
@@ -80,9 +80,11 @@ func main() {
 
 	config.StartBackup(ctx) // First backup run
 
-	for {
+	for range time.Tick(backupInterval) {
 		select {
-		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		default:
 			config.StartBackup(ctx)
 		}
 	}

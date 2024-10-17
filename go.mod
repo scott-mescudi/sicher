@@ -1,4 +1,4 @@
-module gobackup
+module github.com/scott-mescudi/sicher
 
 go 1.23.0
 

@@ -1,6 +1,7 @@
 *.exe
 *.ps1
 *.bash
+*.sh
 folder/
 backup131233/
 srcf/
